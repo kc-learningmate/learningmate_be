@@ -8,6 +8,7 @@ import org.kc5.learningmate.api.v1.dto.response.member.MemberResponse;
 import org.kc5.learningmate.api.v1.dto.response.member.ProfileImageDto;
 import org.kc5.learningmate.common.exception.CommonException;
 import org.kc5.learningmate.common.exception.ErrorCode;
+import org.kc5.learningmate.domain.auth.service.RefreshTokenService;
 import org.kc5.learningmate.domain.member.entity.Member;
 import org.kc5.learningmate.domain.member.repository.MemberRepository;
 import org.springframework.core.io.Resource;
@@ -27,6 +28,7 @@ public class MemberService {
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
     private final ImageService imageService;
+    private final RefreshTokenService refreshTokenService;
 
     @Transactional
     public void createMember(SignUpRequest signUpRequest) {
@@ -117,5 +119,11 @@ public class MemberService {
 
     }
 
-
+    @Transactional
+    public void deleteMember(Long memberId, String refreshToken) {
+        if (!memberRepository.existsById(memberId))
+            throw new CommonException(ErrorCode.INVALID_MEMBER_ID);
+        memberRepository.deleteById(memberId);
+        refreshTokenService.deleteRefreshToken(refreshToken);
+    }
 }

@@ -1,5 +1,6 @@
 package org.kc5.learningmate.api.v1.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.kc5.learningmate.api.v1.dto.request.member.MemberUpdateRequest;
@@ -7,8 +8,12 @@ import org.kc5.learningmate.api.v1.dto.response.member.MemberResponse;
 import org.kc5.learningmate.api.v1.dto.response.member.ProfileImageDto;
 import org.kc5.learningmate.common.ResultResponse;
 import org.kc5.learningmate.domain.auth.entity.MemberDetail;
+import org.kc5.learningmate.domain.auth.provider.HttpCookieProvider;
 import org.kc5.learningmate.domain.member.service.MemberService;
 import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 public class MemberController {
     private final MemberService memberService;
+    private final HttpCookieProvider httpCookieProvider;
 
     @GetMapping("/me")
     public ResponseEntity<ResultResponse<MemberResponse>> getMember(@AuthenticationPrincipal MemberDetail memberDetail) {
@@ -56,5 +62,22 @@ public class MemberController {
 
         return ResponseEntity.ok()
                              .body(new ResultResponse<>(memberResponse));
+    }
+
+    @DeleteMapping("/me")
+    public ResponseEntity<ResultResponse<Void>> deleteMember(@AuthenticationPrincipal MemberDetail memberDetail, HttpServletRequest request) {
+        Long memberId = memberDetail.getMemberId();
+
+        String refreshToken = httpCookieProvider.getRefreshToken(request);
+        memberService.deleteMember(memberId, refreshToken);
+
+        ResponseCookie signOutAccessTokenCookie = httpCookieProvider.createSignOutCookie("accessToken");
+
+        ResponseCookie signOutRefreshTokenCookie = httpCookieProvider.createSignOutCookie("refreshToken");
+
+        return ResponseEntity.ok()
+                             .header(HttpHeaders.SET_COOKIE, signOutAccessTokenCookie.toString())
+                             .header(HttpHeaders.SET_COOKIE, signOutRefreshTokenCookie.toString())
+                             .body(new ResultResponse<>(HttpStatus.OK));
     }
 }
