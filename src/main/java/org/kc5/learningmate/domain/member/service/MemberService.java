@@ -4,16 +4,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.kc5.learningmate.api.v1.dto.request.auth.SignUpRequest;
 import org.kc5.learningmate.api.v1.dto.request.member.MemberUpdateRequest;
-import org.kc5.learningmate.api.v1.dto.response.MyStudyResponse;
 import org.kc5.learningmate.api.v1.dto.response.member.MemberResponse;
 import org.kc5.learningmate.api.v1.dto.response.member.ProfileImageDto;
-import org.kc5.learningmate.api.v1.dto.response.review.PageReviewCountResponse;
 import org.kc5.learningmate.common.exception.CommonException;
 import org.kc5.learningmate.common.exception.ErrorCode;
 import org.kc5.learningmate.domain.member.entity.Member;
 import org.kc5.learningmate.domain.member.repository.MemberRepository;
 import org.springframework.core.io.Resource;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
 import org.springframework.http.MediaTypeFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -22,9 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Slf4j
 @Service
@@ -122,5 +116,6 @@ public class MemberService {
         member.updatePassword(passwordEncoder.encode(password));
 
     }
+
 
 }

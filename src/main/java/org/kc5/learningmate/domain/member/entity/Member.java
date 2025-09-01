@@ -6,6 +6,8 @@ import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 import org.kc5.learningmate.common.BaseEntity;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Entity
 @Builder
@@ -27,6 +29,9 @@ public class Member extends BaseEntity {
     @ColumnDefault("1")
     @Column(nullable = false)
     private Boolean status;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 
     public void updateNickname(String nickname) {
         this.nickname = nickname;
