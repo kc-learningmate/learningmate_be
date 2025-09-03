@@ -1,0 +1,77 @@
+name: CI/CD with Docker, ECR and EC2
+
+on:
+  push:
+    branches: [ "main" ]
+
+# OIDC 토큰을 요청하기 위한 권한을 추가합니다.
+permissions:
+  id-token: write # 필수
+  contents: read # 필수 (actions/checkout@v3 사용 시)
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v3
+
+      # IAM 사용자의 Access Key 대신 OIDC 역할을 사용하도록 변경합니다.
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4 # 최신 버전 사용 권장
+        with:
+          role-to-assume: ${{ secrets.AWS_IAM_ROLE_ARN }} # 여기에 생성한 IAM 역할의 ARN을 입력합니다.
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Create ECR repository if it does not exist
+        env:
+          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+        run: |
+          aws ecr create-repository \
+            --repository-name $ECR_REPOSITORY \
+            --region $AWS_REGION || true
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Deploy to EC2 instance
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          # envs: IMAGE_URI=${{ steps.build-image.outputs.image }}
+          script: |
+            cd /home/ec2-user/workspace/learningmate
+
+            # SSM 파라미터를 가져오는 부분은 EC2 인스턴스 역할의 권한으로 실행되므로 변경이 필요 없습니다.
+            aws ssm get-parameters-by-path --path "/learningmate/prod/" --with-decryption --query 'Parameters[*].[Name,Value]' --output text |\
+              while read -r name value; do \
+              echo "${name##*/}=$value"; \
+              done > .env
+
+            # ECR 로그인
+            aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
+
+            export IMAGE_URI=${{ steps.build-image.outputs.image }}
+
+            docker-compose down
+            docker-compose pull
+            docker-compose up -d
+
+            # rm .env
+            docker image prune -f

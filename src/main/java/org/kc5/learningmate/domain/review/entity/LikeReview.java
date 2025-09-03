@@ -11,6 +11,19 @@ import org.kc5.learningmate.domain.member.entity.Member;
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
+@Table(
+        name = "likereview",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_like_review_review_member",
+                        columnNames = {"review_id", "member_id"}
+                )
+        },
+        indexes = {
+                @Index(name = "idx_like_review_review", columnList = "review_id"),
+                @Index(name = "idx_like_review_member", columnList = "member_id")
+        }
+)
 public class LikeReview extends BaseEntity {
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

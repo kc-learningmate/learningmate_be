@@ -35,4 +35,10 @@ public class Review extends BaseEntity {
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
 
-   }
+    public void update(String content1, String content2, String content3) {
+        this.content1 = content1;
+        this.content2 = content2;
+        this.content3 = content3;
+    }
+
+}

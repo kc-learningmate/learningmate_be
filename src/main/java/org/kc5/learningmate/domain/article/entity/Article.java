@@ -1,10 +1,7 @@
 package org.kc5.learningmate.domain.article.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import lombok.*;
-import org.hibernate.Internal;
 import org.hibernate.annotations.ColumnDefault;
 import org.kc5.learningmate.common.BaseEntity;
 import org.kc5.learningmate.domain.keyword.entity.Keyword;
@@ -49,6 +46,6 @@ public class Article extends BaseEntity {
     private Long views;
 
     @ColumnDefault("'0'")
-    @Column(name = "scrap_count",nullable = false)
+    @Column(name = "scrap_count", nullable = false)
     private Long scrapCount;
 }
